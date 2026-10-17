@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+*.pdf
+*.log
+.edge-profile
+.chrome-*
+.tools
+qa-*.png
+logo-preview-*.png
