@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+.vercel
+*.log
+.env*
+!.env.example
+.edge-profile/
+.chrome-*/
+.tools/
+logo-preview-*.png
+qa-*.png
+
