@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AboutPage, ContactPage, LegalPage, OurWorkPage, QuotePage, ServiceDetailPage, ServicesPage } from "@/components/page-views";
 import { findService, services } from "@/lib/site-data";
 
-type Props = { params: Promise<{ slug: string[] }> };
+type Props = { params: Promise<{ slug: string[] }>; searchParams: Promise<{ service?: string }> };
 
 export function generateStaticParams() {
   return [
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return map[path] ?? { title: "Page Not Found" };
 }
 
-export default async function CatchAllPage({ params }: Props) {
+export default async function CatchAllPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const path = slug.join("/");
   if (path === "services") return <ServicesPage />;
@@ -42,7 +42,7 @@ export default async function CatchAllPage({ params }: Props) {
   if (path === "our-work") return <OurWorkPage />;
   if (path === "about") return <AboutPage />;
   if (path === "contact") return <ContactPage />;
-  if (path === "get-a-quote") return <QuotePage />;
+  if (path === "get-a-quote") return <QuotePage service={(await searchParams).service} />;
   if (path === "privacy" || path === "terms") return <LegalPage type={path} />;
   notFound();
 }

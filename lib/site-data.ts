@@ -2,13 +2,17 @@ export const business = {
   name: "AL WATHBAH",
   legalName: "AL WATHBAH Auto New Super Parts Tr. L.L.C.",
   tagline: "Where precision defines professionalism",
+  promise: "Because every part matters",
   email: "",
   phone: "",
   whatsapp: "",
   address: "",
   serviceArea: "Sharjah & Ajman, UAE",
   hours: "",
-  instagram: "",
+  instagram: "https://www.instagram.com/wathbah.ae/",
+  instagramHandle: "@wathbah.ae",
+  // Inquiry dashboard endpoint. Forms POST here once it is set.
+  inquiryEndpoint: "",
   mapEmbedUrl: "",
 } as const;
 
@@ -184,13 +188,17 @@ export const services: Service[] = [
 ];
 
 export const projectImages = [
-  { src: "/images/aqua-range-rover.jpeg", title: "Aqua Range Rover", category: "Color Transformations", alt: "Aqua-finished Range Rover inside the Al Wathbah workshop" },
-  { src: "/images/aqua-mercedes.jpeg", title: "Aqua Mercedes", category: "Color Transformations", alt: "Aqua-finished Mercedes photographed inside the workshop" },
-  { src: "/images/dodge-daytona.jpeg", title: "Dodge Daytona", category: "Paint Finish", alt: "Black Dodge Daytona under studio inspection lights" },
-  { src: "/images/land-cruiser.jpeg", title: "Land Cruiser", category: "Studio Work", alt: "Toyota Land Cruiser presented in the Al Wathbah workshop" },
-  { src: "/images/blue-mercedes.jpeg", title: "Mercedes Sedan", category: "Studio Work", alt: "Blue Mercedes sedan in the wrap bay" },
-  { src: "/images/g-wagon.jpeg", title: "Mercedes G-Class", category: "Studio Work", alt: "White Mercedes G-Class inside the detailing studio" },
+  { src: "/images/aqua-range-rover.jpeg", width: 1200, height: 1600, title: "Range Rover Sport SVR", category: "Color Transformations", alt: "Range Rover Sport SVR in a gloss aqua finish with black roof inside the Al Wathbah studio" },
+  { src: "/images/dodge-daytona.jpeg", width: 1200, height: 1600, title: "Dodge Charger Daytona", category: "Paint Finish", alt: "Gloss black Dodge Charger Daytona reflecting the studio neon sign" },
+  { src: "/images/aqua-mercedes.jpeg", width: 736, height: 885, title: "Mercedes-AMG E-Class", category: "Color Transformations", alt: "Mercedes E-Class in a fresh aqua film finish on the wrap bay floor" },
+  { src: "/images/land-cruiser.jpeg", width: 1200, height: 1600, title: "Toyota Land Cruiser", category: "Studio Work", alt: "Satin black Toyota Land Cruiser with Al Wathbah plate under the studio neon" },
+  { src: "/images/blue-mercedes.jpeg", width: 900, height: 1600, title: "Mercedes E-Class Sedan", category: "Studio Work", alt: "Electric blue Mercedes E-Class beside the studio wall of wrap film rolls" },
+  { src: "/images/g-wagon.jpeg", width: 900, height: 1600, title: "Mercedes-AMG G 63", category: "Studio Work", alt: "White Mercedes-AMG G 63 centred in the Al Wathbah detailing studio" },
 ] as const;
+
+export type ProjectImage = (typeof projectImages)[number];
+
+export const marques = ["Mercedes-Benz", "Land Rover", "Lamborghini", "Porsche", "BMW", "Maserati", "McLaren", "Toyota", "Dodge"] as const;
 
 export const testimonials: { quote: string; name: string; service: string }[] = [];
 

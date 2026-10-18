@@ -3,15 +3,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, ChevronDown, Menu, MessageCircle, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
+import { Instagram } from "@/components/icons";
 import { business, services } from "@/lib/site-data";
-import { MotionLayer, Preloader } from "@/components/motion";
+import { Cursor } from "@/components/motion/cursor";
+import { MotionLayer } from "@/components/motion/motion-layer";
+import { Preloader } from "@/components/motion/preloader";
+import { lockScroll, SmoothScroll } from "@/components/motion/smooth-scroll";
+import { SpinBadge } from "@/components/motion/spin-badge";
 
 const mainLinks = [
   { href: "/", label: "Home" },
+  { href: "/services", label: "Services" },
   { href: "/our-work", label: "Our Work" },
-  { href: "/about", label: "About Us" },
+  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -19,13 +25,16 @@ const serviceGroups = ["Protection", "Styling & Detailing"] as const;
 
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
-    <MotionLayer>
-      <Preloader />
-      <Header />
-      <main id="main-content">{children}</main>
-      <Footer />
-      <FloatingContact />
-    </MotionLayer>
+    <SmoothScroll>
+      <MotionLayer>
+        <Preloader />
+        <Cursor />
+        <Header />
+        <main id="main-content" className="site-main">{children}</main>
+        <Footer />
+        <MobileActionBar />
+      </MotionLayer>
+    </SmoothScroll>
   );
 }
 
@@ -33,85 +42,123 @@ function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
-  const navRef = useRef<HTMLElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const linksRef = useRef<HTMLDivElement>(null);
+
+  const isActive = useCallback((href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href)), [pathname]);
+
+  // Glass capsule hides while scrolling down, returns on the way up, compacts once scrolled.
+  useEffect(() => {
+    let last = window.scrollY;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const y = window.scrollY;
+      const element = header.current;
+      if (!element) return;
+      element.dataset.scrolled = String(y > 40);
+      if (Math.abs(y - last) > 6) element.dataset.hidden = String(y > last && y > 240);
+      last = y;
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); };
+  }, []);
 
   useEffect(() => {
-    document.body.classList.toggle("menu-open", mobileOpen);
+    lockScroll(mobileOpen);
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-        setServicesOpen(false);
-      }
+      if (event.key === "Escape") { setMobileOpen(false); setServicesOpen(false); }
     };
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.classList.remove("menu-open");
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => { lockScroll(false); window.removeEventListener("keydown", onKey); };
   }, [mobileOpen]);
 
-  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
+  // Liquid indicator: glides to the hovered link and settles back on the active page.
+  const moveIndicator = useCallback((target?: HTMLElement | null) => {
+    const container = linksRef.current;
+    if (!container) return;
+    const element = target ?? container.querySelector<HTMLElement>("[data-active='true']");
+    if (!element) { container.style.setProperty("--pill-o", "0"); return; }
+    container.style.setProperty("--pill-x", `${element.offsetLeft}px`);
+    container.style.setProperty("--pill-w", `${element.offsetWidth}px`);
+    container.style.setProperty("--pill-o", "1");
+  }, []);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => moveIndicator());
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, moveIndicator]);
+
+  const closeMenus = () => { setMobileOpen(false); setServicesOpen(false); };
 
   return (
-    <header className="site-header">
+    <header className="site-header" ref={header} data-menu={mobileOpen}>
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <nav className="nav-shell" aria-label="Primary navigation" ref={navRef}>
-        <Link href="/" className="brand" aria-label="Al Wathbah home">
+      <nav className="nav-shell" aria-label="Primary navigation">
+        <span className="nav-glass" aria-hidden="true" />
+        <Link href="/" className="brand" aria-label="Al Wathbah home" onClick={closeMenus}>
           <Image src="/logo-primary.png" alt="Al Wathbah" width={1309} height={290} priority />
         </Link>
 
-        <div className="desktop-nav">
-          <Link href="/" data-active={isActive("/")}>Home</Link>
-          <div
-            className="services-nav"
-            onMouseEnter={() => setServicesOpen(true)}
-            onMouseLeave={() => setServicesOpen(false)}
-            onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setServicesOpen(false); }}
-          >
-            <button type="button" aria-expanded={servicesOpen} aria-controls="services-mega-menu" onClick={() => setServicesOpen((value) => !value)}>
-              Services <ChevronDown size={14} />
-            </button>
-            <div id="services-mega-menu" className="mega-menu" data-open={servicesOpen}>
-              <div className="mega-intro">
-                <span className="eyebrow">Our expertise</span>
-                <strong>Protection, styling, and detail—considered as one.</strong>
-                <Link href="/services">View all services <ArrowUpRight size={16} /></Link>
-              </div>
-              {serviceGroups.map((group) => (
-                <div className="mega-group" key={group}>
-                  <span>{group}</span>
-                  {services.filter((service) => service.group === group).map((service) => (
-                    <Link href={`/services/${service.slug}`} key={service.slug}>{service.shortTitle}<ArrowUpRight size={13} /></Link>
-                  ))}
+        <div className="desktop-nav" ref={linksRef} onMouseLeave={() => moveIndicator()}>
+          <span className="nav-pill" aria-hidden="true" />
+          {mainLinks.map((link) => link.href === "/services" ? (
+            <div
+              key={link.href}
+              className="services-nav"
+              data-active={isActive(link.href)}
+              onMouseEnter={(event) => { setServicesOpen(true); moveIndicator(event.currentTarget); }}
+              onMouseLeave={() => setServicesOpen(false)}
+              onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setServicesOpen(false); }}
+            >
+              <button type="button" aria-expanded={servicesOpen} aria-controls="services-mega-menu" onClick={() => setServicesOpen((value) => !value)}>
+                Services <ChevronDown size={14} />
+              </button>
+              <div id="services-mega-menu" className="mega-menu" data-open={servicesOpen}>
+                <div className="mega-intro">
+                  <span className="eyebrow"><i />Our expertise</span>
+                  <strong>Protection, styling and detail — considered as one.</strong>
+                  <Link href="/services" onClick={closeMenus}>View all services <ArrowUpRight size={16} /></Link>
                 </div>
-              ))}
+                {serviceGroups.map((group) => (
+                  <div className="mega-group" key={group}>
+                    <span>{group}</span>
+                    {services.filter((service) => service.group === group).map((service) => (
+                      <Link href={`/services/${service.slug}`} key={service.slug} onClick={closeMenus}>{service.shortTitle}<ArrowUpRight size={14} /></Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          {mainLinks.slice(1).map((link) => <Link key={link.href} href={link.href} data-active={isActive(link.href)}>{link.label}</Link>)}
+          ) : (
+            <Link key={link.href} href={link.href} data-active={isActive(link.href)} onMouseEnter={(event) => moveIndicator(event.currentTarget)}>{link.label}</Link>
+          ))}
         </div>
 
-        <Link className="button button-small nav-quote" href="/get-a-quote"><span>Get a Quote</span><ArrowUpRight size={16} /></Link>
-        <button className="menu-toggle" type="button" onClick={() => setMobileOpen(true)} aria-label="Open navigation" aria-expanded={mobileOpen}>
-          <Menu />
+        <Link className="button button-small button-gold nav-quote" href="/get-a-quote"><span>Get a Quote</span><ArrowUpRight size={16} /></Link>
+        <button className="menu-toggle" type="button" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileOpen} aria-controls="mobile-menu">
+          {mobileOpen ? <X /> : <Menu />}
         </button>
       </nav>
 
-      <div className="mobile-menu" data-open={mobileOpen} aria-hidden={!mobileOpen}>
-        <div className="mobile-menu-head">
-          <Image src="/logo-secondary.png" alt="" width={794} height={266} />
-          <button type="button" aria-label="Close navigation" onClick={() => setMobileOpen(false)}><X /></button>
-        </div>
+      <div id="mobile-menu" className="mobile-menu" data-open={mobileOpen} aria-hidden={!mobileOpen} inert={!mobileOpen}>
         <div className="mobile-links">
-          <Link href="/" onClick={() => setMobileOpen(false)}><span>01</span>Home</Link>
-          <Link href="/services" onClick={() => setMobileOpen(false)}><span>02</span>Services</Link>
-          <Link href="/our-work" onClick={() => setMobileOpen(false)}><span>03</span>Our Work</Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)}><span>04</span>About Us</Link>
-          <Link href="/contact" onClick={() => setMobileOpen(false)}><span>05</span>Contact</Link>
+          {mainLinks.map((link, index) => (
+            <Link key={link.href} href={link.href} onClick={closeMenus} data-active={isActive(link.href)} style={{ transitionDelay: mobileOpen ? `${0.18 + index * 0.06}s` : "0s" }}>
+              <span>{String(index + 1).padStart(2, "0")}</span>{link.label}
+            </Link>
+          ))}
         </div>
         <div className="mobile-service-list">
-          {services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} onClick={() => setMobileOpen(false)}>{service.shortTitle}</Link>)}
+          {services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} onClick={closeMenus}>{service.shortTitle}</Link>)}
         </div>
-        <Link className="button button-gold" href="/get-a-quote" onClick={() => setMobileOpen(false)}>Request a quotation <ArrowUpRight size={18} /></Link>
+        <div className="mobile-menu-actions">
+          <Link className="button button-gold" href="/get-a-quote" onClick={closeMenus}>Request a quote <ArrowUpRight size={18} /></Link>
+          <a className="button button-ghost" href={business.instagram} target="_blank" rel="noreferrer"><Instagram size={18} /> {business.instagramHandle}</a>
+        </div>
+        <span className="mobile-menu-arabic" aria-hidden="true">الوثبة</span>
       </div>
     </header>
   );
@@ -120,45 +167,56 @@ function Header() {
 function Footer() {
   return (
     <footer className="site-footer">
-      <div className="footer-statement" data-reveal>
-        <span>Ready when you are.</span>
-        <Link href="/get-a-quote">Let’s discuss your vehicle <ArrowUpRight /></Link>
-      </div>
-      <div className="footer-grid">
-        <div className="footer-brand" data-reveal>
-          <Image src="/logo-primary.png" alt="Al Wathbah" width={1309} height={290} />
-          <p>Premium vehicle protection, styling, and detailing delivered with a precise, considered approach.</p>
+      <div className="footer-inner">
+        <div className="footer-statement">
+          <span className="eyebrow"><i />Ready when you are</span>
+          <Link href="/get-a-quote" data-cursor="QUOTE"><span>Let’s talk about <em>your car</em></span> <ArrowUpRight /></Link>
         </div>
-        <div data-reveal>
-          <span className="footer-label">Navigate</span>
-          <Link href="/">Home</Link><Link href="/services">Services</Link><Link href="/our-work">Our Work</Link><Link href="/about">About Us</Link><Link href="/contact">Contact</Link>
+        <div className="footer-grid">
+          <div className="footer-brand">
+            <Image src="/logo-primary.png" alt="Al Wathbah" width={1309} height={290} />
+            <p>Premium car detailing, paint protection and styling studio in Sharjah & Ajman — because every part matters.</p>
+            <a className="footer-instagram" href={business.instagram} target="_blank" rel="noreferrer" data-cursor="FOLLOW"><Instagram size={18} />{business.instagramHandle}</a>
+          </div>
+          <div>
+            <span className="footer-label">Navigate</span>
+            {mainLinks.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
+            <Link href="/get-a-quote">Get a Quote</Link>
+          </div>
+          <div>
+            <span className="footer-label">Services</span>
+            {services.map((service) => <Link href={`/services/${service.slug}`} key={service.slug}>{service.shortTitle}</Link>)}
+          </div>
+          <div className="footer-badge-col">
+            <span className="footer-label">Studio</span>
+            <p>{business.serviceArea}</p>
+            {business.address && <p>{business.address}</p>}
+            {business.phone && <a href={`tel:${business.phone}`}>{business.phone}</a>}
+            {business.hours && <p>{business.hours}</p>}
+            <SpinBadge className="footer-badge" size={118} />
+          </div>
         </div>
-        <div data-reveal>
-          <span className="footer-label">Services</span>
-          {services.slice(0, 6).map((service) => <Link href={`/services/${service.slug}`} key={service.slug}>{service.shortTitle}</Link>)}
+        <div className="footer-wordmark" aria-hidden="true"><span data-parallax data-axis="x" data-speed="12">AL WATHBAH</span></div>
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} {business.legalName}</span>
+          <div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
         </div>
-        <div data-reveal>
-          <span className="footer-label">Studio</span>
-          <p>{business.address || "Workshop address to be confirmed"}</p>
-          <p>{business.phone || "Phone & WhatsApp to be confirmed"}</p>
-          <p>{business.hours || "Business hours to be confirmed"}</p>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} {business.name}. All rights reserved.</span>
-        <div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
-        <span>{business.serviceArea}</span>
       </div>
     </footer>
   );
 }
 
-function FloatingContact() {
-  const href = business.whatsapp ? `https://wa.me/${business.whatsapp}` : "/contact#contact-form";
+function MobileActionBar() {
   return (
-    <Link className="floating-contact" href={href} data-cursor="CHAT" aria-label={business.whatsapp ? "Chat with Al Wathbah on WhatsApp" : "Contact Al Wathbah"}>
-      <MessageCircle />
-      <span>{business.whatsapp ? "WhatsApp" : "Contact"}</span>
-    </Link>
+    <>
+      <a className="floating-contact" href={business.instagram} target="_blank" rel="noreferrer" data-cursor="DM US" aria-label="Message Al Wathbah on Instagram">
+        <SpinBadge className="floating-ring" size={96} text="MESSAGE US • INSTAGRAM • " />
+        <Instagram />
+      </a>
+      <div className="mobile-action-bar">
+        <a href={business.instagram} target="_blank" rel="noreferrer"><Instagram size={18} />Message us</a>
+        <Link href="/get-a-quote">Get a quote <ArrowUpRight size={18} /></Link>
+      </div>
+    </>
   );
 }
