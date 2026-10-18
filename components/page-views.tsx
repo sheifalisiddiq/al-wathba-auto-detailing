@@ -176,11 +176,25 @@ function WorkReel({ eyebrow = "Selected studio work", title = "Craft, seen from 
     mm.add("(min-width: 901px) and (prefers-reduced-motion: no-preference)", () => {
       const track = root.current!.querySelector<HTMLElement>(".reel-track")!;
       const viewport = root.current!.querySelector<HTMLElement>(".reel-viewport")!;
+      const cards = () => gsap.utils.toArray<HTMLElement>(".reel-card, .reel-end", track);
       const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+      const pitch = () => {
+        const list = cards();
+        return list.length > 1 ? list[1].offsetLeft - list[0].offsetLeft : 1;
+      };
       const tween = gsap.to(track, {
         x: () => -distance(),
         ease: "none",
-        scrollTrigger: { trigger: root.current, start: "top top", end: () => `+=${distance()}`, pin: true, scrub: 0.8, invalidateOnRefresh: true, anticipatePin: 1 },
+        scrollTrigger: {
+          trigger: viewport,
+          start: "top top",
+          end: () => `+=${distance()}`,
+          pin: true,
+          scrub: 0.8,
+          invalidateOnRefresh: true,
+          anticipatePin: 1,
+          snap: { snapTo: (value) => { const inc = pitch() / distance(); return Math.round(value / inc) * inc; }, duration: 0.3, ease: "power1.out" },
+        },
       });
       gsap.utils.toArray<HTMLElement>(".reel-media img", root.current).forEach((image) => {
         gsap.fromTo(image, { xPercent: -8 }, { xPercent: 8, ease: "none", scrollTrigger: { trigger: image.closest(".reel-card"), containerAnimation: tween, start: "left right", end: "right left", scrub: true } });

@@ -11,7 +11,5 @@ build/
 .tools/
 logo-preview-*.png
 qa-*.png
-
-
-.vercel
 .gstack/
+*.tsbuildinfo

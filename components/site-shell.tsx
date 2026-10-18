@@ -7,7 +7,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { Instagram } from "@/components/icons";
 import { business, services } from "@/lib/site-data";
-import { Cursor } from "@/components/motion/cursor";
+import { ButtonRipple } from "@/components/motion/cursor";
+import { PolishingCursor } from "@/components/polishing-cursor/polishing-cursor";
 import { MotionLayer } from "@/components/motion/motion-layer";
 import { Preloader } from "@/components/motion/preloader";
 import { lockScroll, SmoothScroll } from "@/components/motion/smooth-scroll";
@@ -28,7 +29,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
     <SmoothScroll>
       <MotionLayer>
         <Preloader />
-        <Cursor />
+        <ButtonRipple />
+        <PolishingCursor />
         <Header />
         <main id="main-content" className="site-main">{children}</main>
         <Footer />

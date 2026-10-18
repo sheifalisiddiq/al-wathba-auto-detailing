@@ -54,3 +54,7 @@ Animations are declarative. Add attributes in markup and `components/motion/moti
 - `data-scrub-text`, `data-parallax` (+ `data-speed`, `data-axis`, `data-parallax-scope`), `data-zoom-through`, `data-magnetic`, `data-cursor="LABEL"`
 
 The preloader plays once per browser session. Everything respects `prefers-reduced-motion`.
+
+## Polishing cursor
+
+`components/polishing-cursor/` holds the signature cursor (SVG art, canvas trail, rAF loop). It only activates for `(hover: hover) and (pointer: fine)` without `prefers-reduced-motion`; everything else keeps the native cursor. Add `data-polish` to any element to give it the photo-polish effect.
